@@ -30,16 +30,16 @@ class N_queens:
 		''' 1-up
 		    2-down'''
 		self.tempstate = np.copy(self.state) # reset the tempstate to the actual state
-		if direction == 1 and self.tempstate[Queen_column]+steps<=self.size:
+		if direction == 1 and self.tempstate[Queen_column]+steps<self.size:
 			self.tempstate[Queen_column] += steps
 		if direction == 2 and self.tempstate[Queen_column]-steps>=0:
-			self.tempstate[Queen_column] -= steps
+			self.tempstate[Queen_column] -= steps\
 
 	# Function to actually move queen and alter board state
 	def moveQueen_actual(self):
 		self.state = np.copy(self.tempstate)
 
-class Hill_climbing(N_queens):
+class A_star(N_queens):
 
 	def __init__ (self,size):
 		N_queens.__init__(self,size)
@@ -49,52 +49,7 @@ class Hill_climbing(N_queens):
 		self.decision = [] # stores the value of column of queen and direction of motion
 		self.time = 0 
 		
-	# Function to restart the board
-	def restart(self):
-		return self.random_initial_State()
-
-	# Iterates trying to solve the board
-	def solve_iterate(self):
-		for I in range(100):
-			print("Restart",I+1)
-			self.time = time.time() + 10
-			while self.heuristic>0:
-				#print("hey")
-				self.decision = []
-				for i in range(len(self.state)):
-					for j in [1,2]:
-						for k in range(1,len(self.state)):
-							#print(i,j,k)
-							#print(self.tempstate,self.state)
-							self.moveQueen_simulate(i,j,k)
-							self.heuristic_calculator()
-							#print(self.tempstate)
-							if self.heuristic<self.heuristic_min:
-                # solves quickly if sidestepping is allowed
-								#print(self.heuristic,self.heuristic_min)
-								self.heuristic_min = self.heuristic
-								self.decision = [i,j,k]
-								#print(self.decision)
-				#print('Heyyy')
-				if self.decision:
-					#print('hi')
-					self.moveQueen_simulate(self.decision[0],self.decision[1],self.decision[2])
-					#print(self.tempstate)
-					self.moveQueen_actual()
-					#(print(self.state))
-					self.heuristic_calculator()
-					#print(self.heuristic)
-				if time.time()>self.time or not self.decision:
-					#print('yo')
-					#self.decision=[]
-					self.restart()
-					break
-				if self.heuristic == 0:
-					print("Solved")
-					break
-			if self.heuristic == 0:
-				print("Solved")
-				break
+	
 if __name__ == '__main__':
 	n = int(input("Enter the number of queens you want to play with:"))
 	problem = Hill_climbing(n)
