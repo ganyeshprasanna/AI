@@ -30,7 +30,7 @@ class N_queens:
 		''' 1-up
 		    2-down'''
 		self.tempstate = np.copy(self.state) # reset the tempstate to the actual state
-		if direction == 1 and self.tempstate[Queen_column]+steps<=self.size:
+		if direction == 1 and self.tempstate[Queen_column]+steps<self.size:
 			self.tempstate[Queen_column] += steps
 		if direction == 2 and self.tempstate[Queen_column]-steps>=0:
 			self.tempstate[Queen_column] -= steps
@@ -86,7 +86,7 @@ class Hill_climbing(N_queens):
 					#print(self.heuristic)
 				if time.time()>self.time or not self.decision:
 					#print('yo')
-					#self.decision=[]
+					self.decision=[]
 					self.restart()
 					break
 				if self.heuristic == 0:
@@ -94,10 +94,10 @@ class Hill_climbing(N_queens):
 					break
 			if self.heuristic == 0:
 				print("Solved")
+				print("The solved state is:")
+				print(problem.state)
 				break
 if __name__ == '__main__':
 	n = int(input("Enter the number of queens you want to play with:"))
 	problem = Hill_climbing(n)
 	problem.solve_iterate()
-	print("The solved state is:")
-	print(problem.state)
