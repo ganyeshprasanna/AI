@@ -89,7 +89,7 @@ class A_star(N_queens):
 							self.total_calculator(k)
 							#print(self.total)
 							#print([self.total,self.tempstate])
-							self.explored.put([self.total,next(tie),self.tempstate,i])
+							self.explored.put([self.total,next(tie),dict(self.tempstate),i])
 							#print('yo')
 			if self.heuristic == 0:
 				print("Solved")
@@ -123,7 +123,7 @@ class A_star(N_queens):
 			print("The solved state is:")
 			print(problem.state)
 			break'''
-a=A_star(5)
+a=A_star(8)
 print(a.state)
 a.solver()
 print(a.tempstate,a.total)

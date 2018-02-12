@@ -64,6 +64,12 @@ class Environment(Map):
         self.r_indices = []
         self.c_indices = []
         self.a = []
+        self.temp_map = []
+    
+    def get_actual_positions(self,my_map):
+        self.i_indices = np.asarray(np.where(my_map == 12)).T
+        self.r_indices = np.asarray(np.where(my_map == 13)).T
+        self.c_indices = np.asarray(np.where(my_map == 14)).T
         
     def get_score(self,my_map):
         self.score = 0
@@ -159,183 +165,100 @@ class Environment(Map):
             if self.given_map[indices[0],indices[1]] !=11:
                 #print('5')
                 self.score -= self.given_map[indices[0],indices[1]]
-            
-class Genetic_Algortithm(Environment):
+
+    def move_tile_simulate(self,indices, column, row, type):
+        a = self.my_map[row,column]
+        if self.given_map[row,column] != 10 and a != 12 and a != 13 and a != 14:
+            self.temp_map = self.my_map.copy()
+            self.temp_map[indices[0],indices[1]] = 0 
+            self.temp_map[row,column] = type
+            return True
+        else:
+            return False
+
+    def move_tile_actual(self,indices, column, row, type):
+        self.my_map[indices[0],indices[1]] = 0 
+        self.my_map[row,column] = type
+
+class Hill_Climbing(Environment):
     def __init__(self,input):
         Environment.__init__(self,input)
         self.size = 100
         self.my_map = []
-        self.population = []
-        self.min_sorted_population = PriorityQueue(0)
-        self.max_sorted_population = PriorityQueue(0)
-        self.elite = []
-        self.offspring = []
-        self.permutations = []
-        self.culled = []
-        self.culled_index = np.zeros(100)
-        self.population_proper = []
         self.time = 0
         self.max_score = 0
-        self.best_map = []
-
+        self.solution = []
+        self.solution_score =0
+        self.time = 0
+        
     def initialize_map(self):
         self.my_map = np.zeros(self.given_map.shape).flatten()
         self.my_map[0:self.industry] = 12
         self.my_map[self.industry:self.residential+self.industry] = 13
         self.my_map[self.residential+self.industry:self.residential+self.industry+self.commercial] = 14
         random.shuffle(self.my_map)
+        self.my_map = self.my_map.reshape(self.given_map.shape)
+        self.get_score(self.my_map)
+        #print(self.score)
+        self.max_score = self.score
+        self.decision = []
         
-    '''def populate(self):
+    def Climb_hill(self):
+        rows = self.my_map.shape[0]
+        columns = self.my_map.shape[1]
         i=0
-        for pops in multiset_permutations(self.my_map):
-            a = np.array(pops).reshape(self.given_map.shape)
-            b_1 = a==12
-            b_2 = a==13
-            b_3 = a==14
-            if 10 not in self.given_map[b_1] and 10 not in self.given_map[b_2] and 10 not in self.given_map[b_3]:
-                self.population.append(a)
-                i += 1
-            if i == self.size:
-                break'''
-    
-    def populate(self):
-        i=0
-        for pops in multiset_permutations(self.my_map):
-            a = np.array(pops).reshape(self.given_map.shape)
-            b_1 = a==12
-            b_2 = a==13
-            b_3 = a==14
-            if 10 not in self.given_map[b_1] and 10 not in self.given_map[b_2] and 10 not in self.given_map[b_3]:
-                self.permutations.append(a)
-        
-        a = random.sample(range(0,len(self.permutations)),self.size)
-        for i in a:
-            self.population.append(self.permutations[i])
-    
-    def sort_population(self):
-        self.min_sorted_population = PriorityQueue(0)
-        self.max_sorted_population = PriorityQueue(0)
-        for my_map in self.population:
-            self.get_score(my_map)
-            self.min_sorted_population.put([self.score,next(tie),my_map])
-            self.max_sorted_population.put([-self.score,next(tie),my_map])
-    
-    '''def repopulate(self):
-        self.population_proper = []
-        self.culled_index = np.zeros(self.size)
-        for i in self.culled:
-            self.culled_index = self.culled_index + np.array([int(np.array_equal(i,x)) for x in self.population])
-            print(sum(self.culled_index))
-        for i in range(len(self.culled_index)):
-            if self.culled_index[i]==0:
-                self.population_proper.append(self.population[i])'''
-    
-    def repopulate(self):
-        self.population_proper = []
-        for i in range(self.size-len(self.culled)):
-            a = self.min_sorted_population.get()
-            self.population_proper.append(a[2])
-            
-    def culling(self):
-        self.culled = []
-        for i in range(int(0.1*self.size)):
-            b = self.min_sorted_population.get()
-            self.culled.append(b[2])
-            
-    def elitism(self):
-        self.elite = []
-        self.max_score = 0
-        for i in range(int(0.1*self.size)):
-            a = self.max_sorted_population.get()
-            if a[0]<self.max_score:
-                self.max_score = a[0]
-                self.best_map = a[2]
-            self.max_score = -self.max_score
-            self.elite.append(a[2])
-
-    def crossover(self):
-        '''
-        Perform mating and produce new offspring
-        '''
-        self.offspring = []
-        numbers = 0
+        self.time = time.time()+10
         while True:
-            length = len(self.culled)
-            int1 = np.random.randint(0,self.size-length)
-            int2 = np.random.randint(0,self.size-length)
-            if int1 != int2:    
-                par_1 = self.population_proper[int1]
-                par_2 = self.population_proper[int2]
-                
-                # random probability
-                prob = random.random()
+            print("Restart",i+1)
+            while True:
+                self.get_actual_positions(self.my_map)
+                self.decision = []
+                for row in range(rows):
+                    for column in range(columns):
+                        for indices in self.i_indices:
+                            if self.move_tile_simulate(indices,column,row,12):
+                                self.get_score(self.temp_map)
+                                #print(self.score)
+                                
+                                if self.score>self.max_score:
+                                    self.max_score = self.score
+                                    self.decision = [indices,column,row,12]
+                            
+                        for indices in self.r_indices:
+                            if self.move_tile_simulate(indices,column,row,13):
+                                self.get_score(self.temp_map)
+                                if self.score>self.max_score:
+                                    self.max_score = self.score
+                                    self.decision = [indices,column,row,13]
+                        
+                        for indices in self.c_indices:
+                            if self.move_tile_simulate(indices,column,row,14):
+                                self.get_score(self.temp_map)
+                                if self.score>self.max_score:
+                                    self.max_score = self.score
+                                    self.decision = [indices,column,row,14]
+                #print(self.max_score)
+                if self.decision:
+                    self.move_tile_actual(self.decision[0],self.decision[1],self.decision[2],self.decision[3])
+                    self.get_score(self.my_map)
+                    #print(self.decision)
+                    #print(self.my_map)
+                    if self.score>self.solution_score:
+                        self.solution_score = self.score
+                        self.solution = [self.score,self.my_map]
+                if not self.decision:
+                    self.initialize_map()
+                    i += 1
+                    break
 
-                # if prob is less than 0.35, change industrial tiles
-                if prob < 0.35:
-                    b_1 = par_1 == 12
-                    b_2 = par_2 == 12
-                    if 13 not in par_1[b_2] and 14 not in par_2[b_1] and 13 not in par_2[b_1] and 14 not in par_1[b_2]:
-                        par_1[b_1] = 0
-                        par_2[b_2] = 0
-                        par_1[b_1] = 12
-                        par_2[b_2] = 12
-                        self.offspring.append(par_1)
-                        self.offspring.append(par_2)
-                        numbers += 2
-                
-                # if prob is between 0.35 and 0.70, change residential tiles
-                elif prob >= 0.35 and prob < 0.7:
-                    b_1 = par_1 == 13
-                    b_2 = par_2 == 13
-                    if 12 not in par_1[b_2] and 14 not in par_2[b_1] and 12 not in par_2[b_1] and 14 not in par_1[b_2]:
-                        par_1[b_1] = 0
-                        par_2[b_2] = 0
-                        par_1[b_1] = 13
-                        par_2[b_2] = 13
-                        self.offspring.append(par_1)
-                        self.offspring.append(par_2)
-                        numbers += 2
-                
-                elif prob >= 0.7 and prob <= 1.0:
-                    b_1 = par_1 == 14
-                    b_2 = par_2 == 14
-                    if 12 not in par_1[b_2] and 13 not in par_2[b_1] and 12 not in par_2[b_1] and 13 not in par_1[b_2]:
-                        par_1[b_1] = 0
-                        par_2[b_2] = 0
-                        par_1[b_1] = 14
-                        par_2[b_2] = 14
-                        self.offspring.append(par_1)
-                        self.offspring.append(par_2)
-                        numbers += 2
-                
-            if numbers == self.size-len(self.elite):
-                break
-
-    def evolve(self):
-        self.initialize_map()
-        self.populate()
-        self.time = time.time() + 10
-        i = 1
-        while True:
-            print("Generation", i+1)
-            self.sort_population()
-            self.culling()
-            #print(len(self.culled))
-            self.elitism()
-            print("Max score of population is", self.max_score)
-            #print(len(self.elite))
-            self.repopulate()
-            #print(len(self.population_proper))
-            self.crossover()
-            #print(len(self.offspring))
-            self.offspring.extend(self.elite)
-            self.population = self.offspring[:]
-            #print(len(self.population))
-            i += 1
             if time.time()>self.time:
                 break
 
 if __name__ == '__main__':
-    city = Genetic_Algortithm('sample 1.txt')
-    city.evolve()
-    print(city.best_map)
+    city = Hill_Climbing('sample 2.txt')
+    city.initialize_map()
+    print(city.score)
+    print(city.my_map)
+    city.Climb_hill()
+    city.get_score(city.my_map)
+    print(city.solution)
