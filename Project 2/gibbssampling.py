@@ -1,12 +1,12 @@
 class Network(object):
 	def __init__(self):
 		self.graph = {'amenities'	 : ['location'],
-					  'neighbourhood': ['location', 'children'],
-					  'location'	 : ['age', 'price'],
-					  'children'	 : ['schools'],
-					  'age'		 : ['price'],
-					  'schools'	 : ['price'],
-					  'size'	 : ['price']}
+			      'neighbourhood'	 : ['location', 'children'],
+			      'location'	 : ['age', 'price'],
+			      'children'	 : ['schools'],
+			      'age'		 : ['price'],
+			      'schools'	 	 : ['price'],
+			      'size'		 : ['price']}
 
 
 class gibbsSampling(Network):
