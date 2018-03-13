@@ -4,9 +4,9 @@ class Network(object):
 					  'neighbourhood': ['location', 'children'],
 					  'location'	 : ['age', 'price'],
 					  'children'	 : ['schools'],
-					  'age'			 : ['price'],
-					  'schools'		 : ['price'],
-					  'size'		 : ['price']}
+					  'age'		 : ['price'],
+					  'schools'	 : ['price'],
+					  'size'	 : ['price']}
 
 
 class gibbsSampling(Network):
