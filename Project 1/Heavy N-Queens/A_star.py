@@ -3,19 +3,23 @@
 from queue import PriorityQueue
 import random
 from itertools import count
+#from timeit import default_timer as timer
+#import numpy as np
+import time
+
 tie = count() #global
 
 class N_queens:
-	
+
 	def __init__(self,size):
 		self.size = size # size of the board(nxn)
 		self.state = {} # state of the system represented by an array (index is column and value stored is row)
 		self.heuristic = 0 # no of attacking queens
 		self.tempstate = {} # dummy attribute to store simulated position
-	
+
 	# Function to randomly assign the initial state of the system
 	def random_initial_State(self):
-		self.state = {x: random.randint(0,self.size-1)  for x in range(self.size)} 
+		self.state = {x: random.randint(0,self.size-1)  for x in range(self.size)}
 		self.tempstate = dict(self.state)
 
 	# Function to calculate the heuristic
@@ -55,13 +59,15 @@ class A_star(N_queens):
 		self.heuristic_calculator()	# calculate heuristic
 		#self.heuristic_min = self.heuristic # to store the value of minimum heuristic
 		self.decision = [] # stores the value of column of queen and direction of motion
-		self.time = 0
+		self.time = time.time()
 		self.explored = PriorityQueue(0)
 		self.cost = 0
 		self.total = self.heuristic
 		self.a = list(range(self.size))
 		self.expand = []
-		
+		self.nodes_expanded = 1
+		self.depth = 1
+
 	def cost_calculator(self):
 		self.cost = self.total - self.heuristic
 
@@ -69,7 +75,7 @@ class A_star(N_queens):
 		self.total = self.cost + self.heuristic + (steps**2) + 10
 
 	def solver(self):
-		#self.time = time.time() + 10
+	 	#self.time = time.time() + 10
 		while self.heuristic>0:
 			#self.heuristic_calculator()
 			#print(self.heuristic)
@@ -79,7 +85,6 @@ class A_star(N_queens):
 			for i in self.a:
 				for j in [1,2]:
 					for k in range(1,self.size):
-						#print("nibba")
 						#print(self.tempstate,self.state)
 						if self.moveQueen_simulate(i,j,k):
 							#print(self.tempstate)
@@ -89,17 +94,16 @@ class A_star(N_queens):
 							self.total_calculator(k)
 							#print(self.total)
 							#print([self.total,self.tempstate])
-							self.explored.put([self.total,next(tie),dict(self.tempstate),i])
+							self.explored.put([self.total,next(tie),self.tempstate,i,self.depth])
 							#print('yo')
-			if self.heuristic == 0:
-				print("Solved")
-				break			
 			
 			if not self.explored.empty():
 				#print('hi')
+				self.nodes_expanded += 1
 				self.expand = self.explored.get()
 				#print(self.tempstate)
 				self.state = dict(self.expand[2]);self.total = self.expand[0]
+				self.depth = self.expand[4] + 1
 				self.tempstate = dict(self.state)
 				#print(self.state)
 				#print(self.total)
@@ -107,8 +111,12 @@ class A_star(N_queens):
 				#print(self.heuristic)
 				self.a = list(range(self.size))
 				self.a.remove(self.expand[3])
-			
-			
+
+			if self.heuristic == 0:
+				print("Solved")
+				self.time = (time.time()-self.time)
+				break
+
 				#print(self.heuristic)
 			'''if time.time()>self.time or not self.decision:
 				print('yo')
@@ -123,7 +131,24 @@ class A_star(N_queens):
 			print("The solved state is:")
 			print(problem.state)
 			break'''
-a=A_star(8)
-print(a.state)
-a.solver()
-print(a.tempstate,a.total)
+def main():
+	m = int(input("Enter the number of queens you what to work with:"))
+	if m>3:
+		problem=A_star(m)
+		print("The initial state of the board is:")
+		print(problem.state)
+		print("The state is represented by a dictionary. The keys correspond to the column of the board and the value stored is the row in which the queen is placed.")
+		problem.solver()
+		print("The solved state of the board is:")
+		print(problem.tempstate)
+		print("The cost to move is:")
+		print(problem.total)
+		print("Number of nodes expanded", problem.nodes_expanded)
+		print("Effective branching factor is", problem.nodes_expanded/problem.depth)
+		print("Time elapsed",problem.time)
+	else:
+		print("Can't Solve for number of queens =",m)
+	return problem.nodes_expanded
+
+if __name__ == "__main__":
+	a=main()

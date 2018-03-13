@@ -1,19 +1,25 @@
 #!/usr/bin/env python
-import numpy as np
-import time
+#import time
+from queue import PriorityQueue
 import random
+from itertools import count
+#from timeit import default_timer as timer
+#import numpy as np
+import time
+
+tie = count() #global
 
 class N_queens:
-	
+
 	def __init__(self,size):
 		self.size = size # size of the board(nxn)
 		self.state = {} # state of the system represented by an array (index is column and value stored is row)
 		self.heuristic = 0 # no of attacking queens
 		self.tempstate = {} # dummy attribute to store simulated position
-	
+
 	# Function to randomly assign the initial state of the system
 	def random_initial_State(self):
-		self.state = {x: random.randint(0,self.size-1)  for x in range(self.size)} 
+		self.state = {x: random.randint(0,self.size-1)  for x in range(self.size)}
 		self.tempstate = dict(self.state)
 
 	# Function to calculate the heuristic
@@ -33,8 +39,12 @@ class N_queens:
 		self.tempstate = dict(self.state) # reset the tempstate to the actual state
 		if direction == 1 and self.tempstate[Queen_column]+steps<self.size:
 			self.tempstate[Queen_column] += steps
-		if direction == 2 and self.tempstate[Queen_column]-steps>=0:
+			return True
+		elif direction == 2 and self.tempstate[Queen_column]-steps>=0:
 			self.tempstate[Queen_column] -= steps
+			return True
+		else:
+			return False
 
 	# Function to actually move queen and alter board state
 	def moveQueen_actual(self):
@@ -48,9 +58,13 @@ class Hill_climbing(N_queens):
 		self.heuristic_calculator()	# calculate heuristic
 		self.heuristic_min = self.heuristic # to store the value of minimum heuristic
 		self.decision = [] # stores the value of column of queen and direction of motion
-		self.time = 0 
+		self.time = 0
 		self.a = list(range(self.size))
-		
+		self.nodes_expanded = 1
+		self.depth = 1
+		self.cost = 0
+		self.moves = [dict(self.state)]
+
 	# Function to restart the board
 	def restart(self):
 		return self.random_initial_State()
@@ -60,7 +74,6 @@ class Hill_climbing(N_queens):
 		self.time = time.time() + 10
 		for I in range(10000):
 			#print(self.state.values())
-			print("Restart",I+1)
 			while self.heuristic>0:
 				#print("hey")
 				self.decision = []
@@ -82,17 +95,28 @@ class Hill_climbing(N_queens):
 				if self.decision:
 					#print('hi')
 					self.moveQueen_simulate(self.decision[0],self.decision[1],self.decision[2])
-					#print(self.tempstate)
+					steps = self.tempstate[self.decision[0]]-self.state[self.decision[0]]
+					#print(self.tempstate[i],self.state[i])
+					self.cost += 10 + (steps)**2
 					self.moveQueen_actual()
-					#(print(self.state))
+					self.moves.append(dict(self.state))
 					self.heuristic_calculator()
 					self.a = list(range(self.size))
 					self.a.remove(self.decision[0])
+					self.nodes_expanded += 1
+					self.depth += 1
 					#print(self.heuristic)
 				if not self.decision:
 					#print('yo')
 					#self.decision=[]
+					print("Restart",I+1)
 					self.restart()
+					self.moves = [dict(self.state)]
+					print("The restarted state is:")
+					print(self.state)
+					self.depth = 1
+					self.cost = 0 
+					#self.depth = 1
 					self.heuristic_calculator()
 					self.a = range(self.size)
 					self.heuristic_min=self.heuristic
@@ -102,14 +126,35 @@ class Hill_climbing(N_queens):
 					break
 			if self.heuristic == 0:
 				print("Solved")
+				print("The cost is:", self.cost)
 				print("The solved state is:")
 				print(self.state)
+				self.time = 10-(self.time-time.time())
+				print("Sequence of moves is:")
+				for i in range(len(self.moves)):
+					print("Move",i)
+					print(self.moves[i])
 				break
 			if time.time()>self.time:
 				print("Unsolved")
 				break
-			
-if __name__ == '__main__':
-	#n = int(input("Enter the number of queens you want to play with:"))
-	problem = Hill_climbing(20)
-	problem.solve_iterate()
+def main():
+
+	m = int(input("Enter the number of queens you what to work with:"))
+	#start = timer()
+	if m>3:
+		problem = Hill_climbing(m)
+		print("The initial state of the board is:")
+		print(problem.state)
+		print("The state is represented by a dictionary. The keys correspond to the column of the board and the value stored is the row in which the queen is placed.")
+		problem.solve_iterate()
+		print("Number of nodes expanded", problem.nodes_expanded)
+		print("Effective branching factor is", problem.nodes_expanded/problem.depth)
+		print("Time elapsed",problem.time)
+
+	else:
+		print("Can't Solve for number of queens =",m)
+	return problem.nodes_expanded
+
+if __name__ == "__main__":
+	a=main()
