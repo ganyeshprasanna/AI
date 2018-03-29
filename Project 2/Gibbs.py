@@ -7,11 +7,11 @@ import matplotlib.pyplot as plt
 
 class Parser(object):
 	def __init__(self):
-		self.interestNode = 'None'
-		self.evidenceNode = []
-		self.evidenceState = []
-		self.iterations = 1
-		self.discard_values = 0
+		self.interestNode = 'None'  																					# stores the string for the query node
+		self.evidenceNode = []																							# list of the evidence nodes
+		self.evidenceState = []																							# list of states the evidence node is at
+		self.iterations = 1 																							# number of iterations
+		self.discard_values = 0 																						# number of values to discard
 
 	def read_arguments(self):
 		parser = argparse.ArgumentParser(prog = 'gsss', description = "Pass in all the arguments")
@@ -28,7 +28,7 @@ class Parser(object):
 		self.discard_values = args.d
 
 class Network(Parser):
-	def __init__(self):
+	def __init__(self):																									# This is the given network
 		Parser.__init__(self)
 		self.graph = {'amenities'	 : ['location'],
 					  'neighborhood' : ['location', 'children'],
@@ -38,21 +38,21 @@ class Network(Parser):
 					  'schools'		 : ['price'],
 					  'size'		 : ['price']}
 
-class CPT(Network):
+class CPT(Network):																										# This is the CPT table given
 	def __init__(self):
 		Network.__init__(self)
 
-	def Cpt_amenities(self,con_amenities):
+	def Cpt_amenities(self,condition):
 		p_amenities = {}
 		p_amenities = {'lots':0.3, 'little':0.7}
-		return  p_amenities[con_amenities]
+		return  p_amenities[condition]
 
-	def Cpt_neighborhood(self,con_neighborhood):
+	def Cpt_neighborhood(self,condition):
 		p_neighborhood = {}
 		p_neighborhood = {'bad':0.4, 'good':0.6}
-		return p_neighborhood[con_neighborhood]
+		return p_neighborhood[condition]
 
-	def Cpt_location(self,con_location,amenities,neighborhood):
+	def Cpt_location(self,condition,amenities,neighborhood):
 		p_location= {}
 		if amenities == 'lots' and neighborhood == 'bad':
 			p_location = {'good':0.3, 'bad':0.4, 'ugly':0.3}
@@ -62,32 +62,32 @@ class CPT(Network):
 			p_location = {'good':0.2, 'bad':0.4, 'ugly':0.4}
 		elif amenities == 'little' and neighborhood == 'good':
 			p_location = {'good':0.5, 'bad':0.35, 'ugly':0.15}
-		return p_location[con_location]
+		return p_location[condition]
 
-	def Cpt_children(self,con_children,neighborhood):
+	def Cpt_children(self,condition,neighborhood):
 		p_children ={}
 		if neighborhood == 'bad':
 			p_children = {'bad':0.6, 'good':0.4}
 		elif neighborhood == 'good':
 			p_children = {'bad':0.3, 'good':0.7}
-		return p_children[con_children]
+		return p_children[condition]
 
-	def Cpt_size(self,con_size):
+	def Cpt_size(self,condition):
 		p_size = {}
 		p_size = {'small':0.33 , 'medium':0.34, 'large':0.33}
-		return p_size[con_size]
+		return p_size[condition]
 
-	def Cpt_schools(self,con_schools,children):
+	def Cpt_schools(self,condition,children):
 		p_schools = {}
 		if children == 'bad':
 			# print('hi')
 			p_schools = {'bad':0.7, 'good':0.3}
-		#	return p_schools[con_schools]
+		#	return p_schools[conditionools]
 		elif children == 'good':
 			p_schools = {'bad':0.2, 'good':0.8}
-		return p_schools[con_schools]
+		return p_schools[condition]
 
-	def Cpt_age(self,con_age,location):
+	def Cpt_age(self,condition,location):
 		p_age = {}
 		if location =='good':
 			p_age = {'old':0.3, 'new':0.7}
@@ -95,9 +95,9 @@ class CPT(Network):
 			p_age = {'old':0.6, 'new':0.4}
 		elif location =='ugly':
 			p_age = {'old':0.9, 'new':0.1}
-		return p_age[con_age]
+		return p_age[condition]
 
-	def Cpt_price(self,con_price,location,age,schools,size):
+	def Cpt_price(self,condition,location,age,schools,size):
 		p_price = {}
 		# 40
 		if location == 'good' and age == 'old' and schools == 'bad' and size =='small':
@@ -207,28 +207,28 @@ class CPT(Network):
 			# 75
 		elif location == 'ugly' and age == 'new' and schools == 'good' and size =='large':
 			p_price = {'cheap':0.37 ,'ok':0.33, 'expensive':0.3}
-		return p_price[con_price]
+		return p_price[condition]
 
 class gibbsSampling(CPT):
 	def __init__(self):
 		CPT.__init__(self)
-		self.numberOfNodes		= 8
-		self.markovBlanket 		= []
-		self.markovBlanket_temp	= []
+		self.numberOfNodes		= 8																						# number of nodes in the network
+		self.markovBlanket 		= []																					# list to store the markov blanket of query node
+		self.markovBlanket_temp	= []																					# stores markov blanket of sampled node(random)
 		#self.evidenceNode		= self.evidence
 		#self.evidenceState 	= state
 		#self.interestNode 		= self.Query
-		self.temp_interest 		= None
-		self.state 				= ['amenities','schools','age','neighborhood','children','location','price','size']
-		self.amenities_count 	= Counter()
-		self.schools_count		= Counter()
-		self.neighborhood_count = Counter()
-		self.children_count 	= Counter()
-		self.location_count		= Counter()
-		self.age_count 			= Counter()
-		self.price_count		= Counter()
-		self.size_count			= Counter()
-		self.sampleSpace		= {'amenities'	   : ['lots','little'],
+		self.temp_interest 		= None 																					# temporary variable
+		self.state 				= ['amenities','schools','age','neighborhood','children','location','price','size']		# contains the list of all nodes
+		self.amenities_count 	= Counter()																				# counter to count number of times a value is assigned to amenities
+		self.schools_count		= Counter()																				# counter to count number of times a value is assigned to schools
+		self.neighborhood_count = Counter()																				# counter to count number of times a value is assigned to neighborhood
+		self.children_count 	= Counter()																				# counter to count number of times a value is assigned to children
+		self.location_count		= Counter()																				# counter to count number of times a value is assigned to location
+		self.age_count 			= Counter()																				# counter to count number of times a value is assigned to age
+		self.price_count		= Counter()																				# counter to count number of times a value is assigned to price
+		self.size_count			= Counter()																				# counter to count number of times a value is assigned to size
+		self.sampleSpace		= {'amenities'	   : ['lots','little'],													# contains the values/states each node can take
 						   		   'neighborhood' : ['good','bad'],
 						   		   'location'	   : ['good','bad','ugly'],
 						   		   'children'	   : ['good','bad'],
@@ -248,8 +248,8 @@ class gibbsSampling(CPT):
 		self.ageProb 			= {}
 		self.priceProb			= {}
 		self.sizeProb			= {}
-		self.count  			= 1
-		self.nonEvidence 		= []
+		self.count  			= 1																						# counts number of iterations
+		self.nonEvidence 		= []																					# contains the list of nodes other than evidence
 		#self.amenities 		= None
 		#self.schools			= None
 		#self.neighborhood 		= None
@@ -259,7 +259,7 @@ class gibbsSampling(CPT):
 		#self.price				= None
 		#self.size				= None
 
-	def getParents(self,node):
+	def getParents(self,node):																							# gets the parents of the query node
 		for parents,child in self.graph.items():
 			try:
 				if child.index(node)+1:
@@ -269,7 +269,7 @@ class gibbsSampling(CPT):
 			except ValueError:
 				pass
 
-	def getChildren(self,node):
+	def getChildren(self,node):																							# gets children of the query node and its parents
 		try:
 			children = self.graph[node]
 			#print(children)
@@ -279,7 +279,7 @@ class gibbsSampling(CPT):
 		except KeyError:
 			pass
 
-	def getMarkovBlanket(self,node):
+	def getMarkovBlanket(self,node):																					# gets the Markov Blanket
 		self.temp_interest = node
 		self.markovBlanket_temp = []
 		self.getParents(node)
@@ -287,14 +287,14 @@ class gibbsSampling(CPT):
 		if node == self.interestNode:
 			self.markovBlanket = self.markovBlanket_temp[:]
 
-	def randomize_network(self):
-		#print(self.state)
-		#list(set(self.state).difference(set(self.evidenceNode)))
+	def randomize_network(self):																					 	# randomly assigns the network except for the evidence node
+		# print(self.state)
+		# list(set(self.state).difference(set(self.evidenceNode)))
 		# print(self.state)
 		self.state = list(set(self.state) - set(self.evidenceNode))
 		# print(self.state)
 		self.nonEvidence = list(self.state)
-		#print(self.state)
+		# print(self.state)
 		for i in range(len(self.evidenceNode)):
 			setattr(self,self.evidenceNode[i],self.evidenceState[i])
 		for iteration in range(len(self.state)):
@@ -354,7 +354,7 @@ class gibbsSampling(CPT):
 		# print(self.price)
 		# print(self.size)
 
-	def Probability(self,node):
+	def Probability(self,node):																							# returns the probability of a node given its parents
 		if node == 'size':
 			return self.Cpt_size(self.size)
 
@@ -380,8 +380,8 @@ class gibbsSampling(CPT):
 		if node == 'price':
 			return self.Cpt_price(self.price,self.location,self.age,self.schools,self.size)
 
-	def getProbabilityDistribution(self,node):
-		a = {}
+	def getProbabilityDistribution(self,node):																			# gives the probability distribution for the node being sampled
+		a = {}																											# this probability is used to assign value/state to the node by rolling a die
 		p = 1
 		for i in self.sampleSpace[node]:
 			setattr(self,node,i)
@@ -404,7 +404,7 @@ class gibbsSampling(CPT):
 		a = {i: p / sum(a.values()) for i, p in a.items()}
 		setattr(self,node+'Prob',dict(a))
 
-	def setNode(self,node):
+	def setNode(self,node):																								# sets the node based on the probabiltiy distribution computed in the previous step
 		a = dict(getattr(self,node+'Prob'))
 		k = 0
 		coinToss = random.random()
